@@ -1,5 +1,7 @@
 package com.mychaelstyle.nlp;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,11 +45,37 @@ public class KNP {
     private String pathKnp = PATH_KNP;
 
     /**
-     * コンストラクタ
-     */
+	 * 解析コマンド
+	 * 
+	 * @author otsuki
+	 */
+	private String[] cmdarray;
+
+	/**
+	 * コンストラクタ
+	 */
     public KNP(){
         super();
+		// juman-knp-commandというテキストファイルがあれば，その1行目からcmdarrayを構成する
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(new File("juman-knp-command")));
+			cmdarray = reader.readLine().split(" ");
+		} catch (IOException e) {
+			// do nothing
+		}
     }
+
+	/**
+	 * Windowsのcmd用コンストラクタ
+	 * 
+	 * @author otsuki
+	 * @param command
+	 *            解析するコマンド列．ただし%textは入力に置換
+	 */
+	public KNP(String[] command) {
+		cmdarray = command;
+	}
+
     /**
      * コンストラクタ
      * @param pathShell shコマンドへのパス文字列
@@ -102,12 +130,22 @@ public class KNP {
             }
         }
 
-        if(null==pathShell || pathShell.isEmpty()) pathShell = Juman.PATH_SHELL;
-        if(null==pathJuman || pathJuman.isEmpty()) pathJuman = Juman.PATH_JUMAN;
-        if(null==pathKnp || pathKnp.isEmpty()) pathKnp = PATH_KNP;
-        String cmd = "echo \""+target+"\" | "+ this.pathJuman
-                +" -e2 | "+pathKnp + " -tab";
-        String[] cmdarray = {pathShell, "-c", cmd};
+		if (cmdarray == null || cmdarray.length == 0) {
+			if (null == pathShell || pathShell.isEmpty())
+				pathShell = Juman.PATH_SHELL;
+			if (null == pathJuman || pathJuman.isEmpty())
+				pathJuman = Juman.PATH_JUMAN;
+			if (null == pathKnp || pathKnp.isEmpty())
+				pathKnp = PATH_KNP;
+			String cmd = "echo \"" + target + "\" | " + this.pathJuman + " -e2 | " + pathKnp + " -tab";
+			cmdarray = new String[] { pathShell, "-c", cmd };
+		} else {
+			for (int i = 0; i < cmdarray.length; i++) {
+				if (cmdarray[i].equals("%text")) {
+					cmdarray[i] = target;
+				}
+			}
+		}
 
 		// start an external process
 		ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
